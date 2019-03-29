@@ -90,7 +90,7 @@ namespace RefRemap
                     // Trim the & at the end of the name
                     // TODO: Is this the correct way to do the lookup?
                     name = name.Substring(0, name.Length - 1);
-                } else if (typeSig.IsFunctionPointer || typeSig.IsPointer || typeSig.IsPinned || typeSig.IsModuleSig || typeSig.IsGenericParameter || 
+                } else if (typeSig.IsFunctionPointer || typeSig.IsPointer || typeSig.IsPinned || typeSig.IsModuleSig || typeSig.IsGenericParameter ||
                            typeSig.IsGenericTypeParameter || typeSig.IsGenericInstanceType || typeSig.IsGenericMethodParameter) {
                     throw new NotImplementedException();
                 }
@@ -181,6 +181,15 @@ namespace RefRemap
             }
         }
 
+        private void RemapNestedMethodDef(MethodDef parentMethodDef, MethodDef methodDef) {
+            // Avoid mapping recursive method calls
+            if (parentMethodDef == methodDef) {
+                return;
+            }
+
+            RemapMethodDef(methodDef);
+        }
+
         private void RemapMethodSig(MethodSig methodSig) {
             methodSig.RetType = RemapReference(methodSig.RetType);
 
@@ -228,18 +237,15 @@ namespace RefRemap
 
                         if (methodSpec.Method.IsMemberRef) {
                             RemapMemberRef((MemberRef)methodSpec.Method);
+                        } else if (methodSpec.Method.IsMethodDef) {
+                            RemapNestedMethodDef(parentMethodDef, (MethodDef)methodSpec.Method);
                         } else {
                             throw new NotImplementedException();
                         }
                     }
                     break;
                 case MethodDef methodDef: {
-                        // Avoid mapping recursive method calls
-                        if (parentMethodDef == methodDef) {
-                            return;
-                        }
-
-                        RemapMethodDef(methodDef);
+                        RemapNestedMethodDef(parentMethodDef, methodDef);
                     }
                     break;
                 case TypeRef typeRef: {
