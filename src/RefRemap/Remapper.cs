@@ -31,13 +31,16 @@ namespace RefRemap
 
                     context.Remap();
 
-                    var references = module.GetAssemblyRefs();
-                    if (references.Where(x => sourceNames.Contains(x.Name)).Any()) {
-                        Console.Error.WriteLine("Unable to remap.");
-                        return 1;
-                    }
-
                     module.Write(outputPath);
+                }
+            }
+
+            // NOTE: References are only updated after the new module has been written
+            using (var module = ModuleDefMD.Load(outputPath)) {
+                var references = module.GetAssemblyRefs();
+                if (references.Where(x => contextSourceNames.Contains(x.Name)).Any()) {
+                    Console.Error.WriteLine("Remap completed with errors. Some portions were not remapped.");
+                    return 1;
                 }
             }
 
