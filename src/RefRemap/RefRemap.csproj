@@ -6,6 +6,11 @@
         <VersionPrefix>1.0.0</VersionPrefix>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>refremap</ToolCommandName>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="dnlib" Version="3.2.0" />
         <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
