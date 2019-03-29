@@ -1,5 +1,8 @@
 language: csharp
+mono: none
 dotnet: 2.1.502
 script:
- - dotnet restore
- - dotnet build
+  - export VersionSuffix=beta-`printf %04d $TRAVIS_BUILD_NUMBER`
+  - dotnet restore
+  - dotnet build
+  - dotnet pack
