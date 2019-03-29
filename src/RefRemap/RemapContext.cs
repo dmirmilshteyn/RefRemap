@@ -86,14 +86,22 @@ namespace RefRemap
                     // Trim the [] at the end of the name
                     // TODO: Is this the correct way to do the lookup?
                     name = name.Substring(0, name.Length - 2);
+                } else if (typeSig.IsByRef) {
+                    // Trim the & at the end of the name
+                    // TODO: Is this the correct way to do the lookup?
+                    name = name.Substring(0, name.Length - 1); 
                 }
 
                 var targetTypeDef = targetModule.FindThrow(name, false);
 
+                var importedTypeSig = module.Import(targetTypeDef.ToTypeSig());
+
                 if (typeSig.IsSZArray) {
-                    return new SZArraySig(module.Import(targetTypeDef).ToTypeSig()).ToTypeDefOrRef();
+                    return new SZArraySig(importedTypeSig).ToTypeDefOrRef();
+                } else if (typeSig.IsByRef) {
+                    return new ByRefSig(importedTypeSig).ToTypeDefOrRef();
                 } else {
-                    return module.Import(targetTypeDef.ToTypeSig()).ToTypeDefOrRef();
+                    return importedTypeSig.ToTypeDefOrRef();
                 }
             }
 
