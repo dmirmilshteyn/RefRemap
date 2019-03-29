@@ -89,7 +89,10 @@ namespace RefRemap
                 } else if (typeSig.IsByRef) {
                     // Trim the & at the end of the name
                     // TODO: Is this the correct way to do the lookup?
-                    name = name.Substring(0, name.Length - 1); 
+                    name = name.Substring(0, name.Length - 1);
+                } else if (typeSig.IsFunctionPointer || typeSig.IsPointer || typeSig.IsPinned || typeSig.IsModuleSig || typeSig.IsGenericParameter || 
+                           typeSig.IsGenericTypeParameter || typeSig.IsGenericInstanceType || typeSig.IsGenericMethodParameter) {
+                    throw new NotImplementedException();
                 }
 
                 var targetTypeDef = targetModule.FindThrow(name, false);
