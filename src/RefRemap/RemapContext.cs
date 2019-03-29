@@ -144,7 +144,6 @@ namespace RefRemap
             if (methodDefStack.Contains(method)) {
                 return;
             }
-
             methodDefStack.Push(method);
 
             RemapCustomAttributes(method.CustomAttributes);
@@ -156,6 +155,11 @@ namespace RefRemap
 
             foreach (var parameter in method.Parameters) {
                 parameter.Type = RemapReference(parameter.Type);
+            }
+
+            foreach (var methodOverride in method.Overrides) {
+                RemapMethodDefOrRef(methodOverride.MethodBody);
+                RemapMethodDefOrRef(methodOverride.MethodDeclaration);
             }
 
             if (method.HasBody) {
@@ -170,14 +174,8 @@ namespace RefRemap
                     // https://github.com/gluck/il-repack/blob/master/ILRepack/RepackImporter.cs#L453
                     // Licensed under Apache 2
 
-                    if (instruction.OpCode.Code == dnlib.DotNet.Emit.Code.Calli) {
-                        var callSite = instruction.Operand;
-                    } else {
+                    if (instruction.OpCode.Code != Code.Calli) {
                         switch (instruction.OpCode.OperandType) {
-                            case OperandType.InlineVar:
-                            case OperandType.ShortInlineVar: {
-                                }
-                                break;
                             case OperandType.InlineMethod:
                             case OperandType.InlineType:
                             case OperandType.InlineTok:
@@ -185,7 +183,6 @@ namespace RefRemap
                                     RemapInstruction(instruction);
                                 }
                                 break;
-
                         }
                     }
                 }
@@ -238,14 +235,7 @@ namespace RefRemap
                     break;
                 case MethodSpec methodSpec: {
                         RemapGenericInstMethodSig(methodSpec.GenericInstMethodSig);
-
-                        if (methodSpec.Method.IsMemberRef) {
-                            RemapMemberRef((MemberRef)methodSpec.Method);
-                        } else if (methodSpec.Method.IsMethodDef) {
-                            RemapMethodDef((MethodDef)methodSpec.Method);
-                        } else {
-                            throw new NotImplementedException();
-                        }
+                        RemapMethodDefOrRef(methodSpec.Method);
                     }
                     break;
                 case MethodDef methodDef: {
@@ -266,6 +256,16 @@ namespace RefRemap
                     break;
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private void RemapMethodDefOrRef(IMethodDefOrRef methodDefOrRef) {
+            if (methodDefOrRef.IsMemberRef) {
+                RemapMemberRef((MemberRef)methodDefOrRef);
+            } else if (methodDefOrRef.IsMethodDef) {
+                RemapMethodDef((MethodDef)methodDefOrRef);
+            } else {
+                throw new NotImplementedException();
             }
         }
 
