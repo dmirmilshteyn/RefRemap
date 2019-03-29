@@ -20,7 +20,7 @@ namespace RefRemap
 
         public void Remap() {
             foreach (var type in EnumerateTypes(module.Types)) {
-                RemapType(type);
+                RemapTypeDef(type);
             }
         }
 
@@ -50,21 +50,31 @@ namespace RefRemap
         }
 
         private ITypeDefOrRef RemapGenericType(ITypeDefOrRef reference) {
-            var genericSig = reference.TryGetGenericInstSig();
+            if (reference.IsTypeDef) {
+                if (reference.DefinitionAssembly != null && reference.DefinitionAssembly == module.Assembly) {
+                    return reference;
+                }
+            } else if (reference.IsTypeSpec || reference.IsTypeRef) {
+                return RemapGenericInstSig(reference.TryGetGenericInstSig());
+            }
 
-            var genericTypeRef = genericSig.GenericType.ToTypeDefOrRef();
+            throw new NotImplementedException();
+        }
+
+        private ITypeDefOrRef RemapGenericInstSig(GenericInstSig genericInstSig) {
+            var genericTypeRef = genericInstSig.GenericType.ToTypeDefOrRef();
 
             var importedTypeRef = Import(genericTypeRef);
 
-            var genericInstSig = new GenericInstSig(new ClassSig(importedTypeRef), reference.NumberOfGenericParameters);
+            var remappedGenericInstSig = new GenericInstSig(new ClassSig(importedTypeRef), genericInstSig.GenericArguments.Count);
 
-            foreach (var referenceGenericArgument in genericSig.GenericArguments) {
+            foreach (var referenceGenericArgument in genericInstSig.GenericArguments) {
                 var genericArgumentRef = referenceGenericArgument.ToTypeDefOrRef();
 
-                genericInstSig.GenericArguments.Add(RemapReference(genericArgumentRef).ToTypeSig());
+                remappedGenericInstSig.GenericArguments.Add(RemapReference(genericArgumentRef).ToTypeSig());
             }
 
-            return genericInstSig.ToTypeDefOrRef();
+            return remappedGenericInstSig.ToTypeDefOrRef();
         }
 
         private ITypeDefOrRef Import(ITypeDefOrRef reference) {
@@ -90,7 +100,7 @@ namespace RefRemap
             return reference;
         }
 
-        private void RemapType(TypeDef type) {
+        private void RemapTypeDef(TypeDef type) {
             RemapCustomAttributes(type.CustomAttributes);
 
             type.BaseType = RemapReference(type.BaseType);
