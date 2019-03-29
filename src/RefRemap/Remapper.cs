@@ -4,20 +4,25 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RefRemap
 {
     class Remapper
     {
+        private readonly ILogger logger;
         private readonly string assemblyPath;
         private readonly HashSet<string> sourceNames;
 
-        public Remapper(string assemblyPath, IEnumerable<string> sourceReferenceNames) {
+        public Remapper(ILogger logger, string assemblyPath, IEnumerable<string> sourceReferenceNames) {
+            this.logger = logger;
             this.assemblyPath = assemblyPath;
             this.sourceNames = new HashSet<string>(sourceReferenceNames);
         }
 
-        public int Remap(string targetAssemblyPath, string outputPath) {
+        public async Task<int> Remap(string targetAssemblyPath, string outputPath) {
+            await logger.Log(LogLevel.Info, $"Processing \'{assemblyPath}\'...");
+
             var targetName = Path.GetFileNameWithoutExtension(targetAssemblyPath);
 
             var contextSourceNames = new HashSet<string>(sourceNames);
@@ -39,10 +44,12 @@ namespace RefRemap
             using (var module = ModuleDefMD.Load(outputPath)) {
                 var references = module.GetAssemblyRefs();
                 if (references.Where(x => contextSourceNames.Contains(x.Name)).Any()) {
-                    Console.Error.WriteLine("Remap completed with errors. Some portions were not remapped.");
+                    await logger.Log(LogLevel.Error, "Remap completed with errors. Some portions were not remapped.");
                     return 1;
                 }
             }
+
+            await logger.Log(LogLevel.Info, $"Remap completed for \'{assemblyPath}\'.");
 
             return 0;
         }
