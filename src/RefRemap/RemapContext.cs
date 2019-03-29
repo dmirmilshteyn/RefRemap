@@ -12,10 +12,14 @@ namespace RefRemap
         private readonly ModuleDefMD targetModule;
         private readonly HashSet<string> sourceAssemblies;
 
+        Stack<MethodDef> methodDefStack;
+
         public RemapContext(ModuleDefMD module, ModuleDefMD targetModule, HashSet<string> sourceAssemblies) {
             this.module = module;
             this.targetModule = targetModule;
             this.sourceAssemblies = sourceAssemblies;
+
+            this.methodDefStack = new Stack<MethodDef>();
         }
 
         public void Remap() {
@@ -136,10 +140,13 @@ namespace RefRemap
         }
 
         private void RemapMethodDef(MethodDef method) {
-            RemapMethodDef(method, new Stack<MethodDef>());
-        }
+            // Avoid mapping recursive method calls
+            if (methodDefStack.Contains(method)) {
+                return;
+            }
 
-        private void RemapMethodDef(MethodDef method, Stack<MethodDef> methodDefStack) {
+            methodDefStack.Push(method);
+
             RemapCustomAttributes(method.CustomAttributes);
 
             RemapMethodSig(method.MethodSig);
@@ -175,9 +182,7 @@ namespace RefRemap
                             case OperandType.InlineType:
                             case OperandType.InlineTok:
                             case OperandType.InlineField: {
-                                    RemapInstruction(methodDefStack, instruction);
-
-                                    methodDefStack.Push(method);
+                                    RemapInstruction(instruction);
                                 }
                                 break;
 
@@ -185,15 +190,8 @@ namespace RefRemap
                     }
                 }
             }
-        }
 
-        private void RemapNestedMethodDef(Stack<MethodDef> methodDefStack, MethodDef methodDef) {
-            // Avoid mapping recursive method calls
-            if (methodDefStack.Contains(methodDef)) {
-                return;
-            }
-
-            RemapMethodDef(methodDef, methodDefStack);
+            methodDefStack.Pop();
         }
 
         private void RemapMethodSig(MethodSig methodSig) {
@@ -228,7 +226,7 @@ namespace RefRemap
             }
         }
 
-        private void RemapInstruction(Stack<MethodDef> methodDefStack, Instruction instruction) {
+        private void RemapInstruction(Instruction instruction) {
             switch (instruction.Operand) {
                 case FieldDef fieldDef: {
                         RemapFieldDef(fieldDef);
@@ -244,14 +242,14 @@ namespace RefRemap
                         if (methodSpec.Method.IsMemberRef) {
                             RemapMemberRef((MemberRef)methodSpec.Method);
                         } else if (methodSpec.Method.IsMethodDef) {
-                            RemapNestedMethodDef(methodDefStack, (MethodDef)methodSpec.Method);
+                            RemapMethodDef((MethodDef)methodSpec.Method);
                         } else {
                             throw new NotImplementedException();
                         }
                     }
                     break;
                 case MethodDef methodDef: {
-                        RemapNestedMethodDef(methodDefStack, methodDef);
+                        RemapMethodDef(methodDef);
                     }
                     break;
                 case TypeRef typeRef: {
