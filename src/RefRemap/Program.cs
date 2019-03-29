@@ -51,9 +51,7 @@ namespace RefRemap
                 }
 
                 var remapper = new Remapper(assemblyPath, sourceOption.Values);
-                remapper.Remap(targetAssemblyPath, outputPath);
-
-                return 0;
+                return remapper.Remap(targetAssemblyPath, outputPath);
             });
 
             return app.Execute(args);

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace RefRemap
@@ -16,7 +17,7 @@ namespace RefRemap
             this.sourceNames = new HashSet<string>(sourceReferenceNames);
         }
 
-        public void Remap(string targetAssemblyPath, string outputPath) {
+        public int Remap(string targetAssemblyPath, string outputPath) {
             var targetName = Path.GetFileNameWithoutExtension(targetAssemblyPath);
 
             var contextSourceNames = new HashSet<string>(sourceNames);
@@ -30,9 +31,17 @@ namespace RefRemap
 
                     context.Remap();
 
+                    var references = module.GetAssemblyRefs();
+                    if (references.Where(x => sourceNames.Contains(x.Name)).Any()) {
+                        Console.Error.WriteLine("Unable to remap.");
+                        return 1;
+                    }
+
                     module.Write(outputPath);
                 }
             }
+
+            return 0;
         }
     }
 }
