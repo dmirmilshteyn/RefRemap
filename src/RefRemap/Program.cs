@@ -8,6 +8,8 @@ namespace RefRemap
     {
         static int Main(string[] args) {
             var app = new CommandLineApplication();
+            app.HelpOption("-?|--help");
+
             var assemblyArgument = app.Argument("assembly", "The path to the assembly to be edited.");
             var sourceOption = app.Option("-s|--source", "Source assembly name to be remapped.", CommandOptionType.MultipleValue);
             var targetOption = app.Option("-t|--target", "Target assembly path.", CommandOptionType.SingleValue);
