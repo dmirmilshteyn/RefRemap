@@ -144,7 +144,7 @@ namespace RefRemap
                             case OperandType.InlineType:
                             case OperandType.InlineTok:
                             case OperandType.InlineField: {
-                                    RemapInstruction(instruction);
+                                    RemapInstruction(method, instruction);
                                 }
                                 break;
 
@@ -186,7 +186,7 @@ namespace RefRemap
             }
         }
 
-        private void RemapInstruction(Instruction instruction) {
+        private void RemapInstruction(MethodDef parentMethodDef, Instruction instruction) {
             switch (instruction.Operand) {
                 case FieldDef fieldDef: {
                         RemapFieldDef(fieldDef);
@@ -207,6 +207,11 @@ namespace RefRemap
                     }
                     break;
                 case MethodDef methodDef: {
+                        // Avoid mapping recursive method calls
+                        if (parentMethodDef == methodDef) {
+                            return;
+                        }
+
                         RemapMethodDef(methodDef);
                     }
                     break;
@@ -264,7 +269,7 @@ namespace RefRemap
                 } else {
                     throw new NotImplementedException();
                 }
-                
+
                 for (var i = customAttribute.ConstructorArguments.Count - 1; i >= 0; i--) {
                     var caArgument = customAttribute.ConstructorArguments[i];
 
