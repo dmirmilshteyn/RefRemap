@@ -8,7 +8,7 @@
 
     <PropertyGroup>
         <PackAsTool>true</PackAsTool>
-        <ToolCommandName>refremap</ToolCommandName>
+        <ToolCommandName>dotnet-refremap</ToolCommandName>
     </PropertyGroup>
 
     <ItemGroup>
