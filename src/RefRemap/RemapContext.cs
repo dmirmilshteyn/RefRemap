@@ -103,6 +103,12 @@ namespace RefRemap
         private void RemapTypeDef(TypeDef type) {
             RemapCustomAttributes(type.CustomAttributes);
 
+            foreach (var genericParameter in type.GenericParameters) {
+                foreach (var constraint in genericParameter.GenericParamConstraints) {
+                    constraint.Constraint = RemapReference(constraint.Constraint);
+                }
+            }
+
             type.BaseType = RemapReference(type.BaseType);
 
             foreach (var typeInterface in type.Interfaces) {
