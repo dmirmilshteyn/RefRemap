@@ -4,5 +4,5 @@ mono: none
 dotnet: 2.2.105
 script:
   - export VersionSuffix=beta-`printf %04d $TRAVIS_BUILD_NUMBER`
-  - dotnet pack -c Release -o build/
+  - dotnet pack -c Release -o ../../build/
   - dotnet nuget push build/**/*.nupkg --api-key $NUGET_KEY --source https://www.myget.org/F/dmirmilshteyn-public/api/v2/package 
