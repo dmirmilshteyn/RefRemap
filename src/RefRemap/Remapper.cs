@@ -44,9 +44,6 @@ namespace RefRemap
                     targetModule.Context = moduleContext;
                     assemblyResolver.AddToCache(targetModule);
 
-                    module.LoadEverything();
-                    targetModule.LoadEverything();
-
                     var context = new RemapContext(module, targetModule, contextSourceNames);
 
                     context.Remap();
