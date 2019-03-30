@@ -37,55 +37,55 @@ namespace RefRemap
             }
         }
 
-        private TypeSig RemapReference(TypeSig reference) {
-            return RemapReference(reference.ToTypeDefOrRef()).ToTypeSig();
+        private ITypeDefOrRef RemapReference(ITypeDefOrRef reference) {
+            return RemapReference(reference.ToTypeSig()).ToTypeDefOrRef();
         }
 
-        private ITypeDefOrRef RemapReference(ITypeDefOrRef reference) {
+        private TypeSig RemapReference(TypeSig reference) {
             if (reference == null) {
                 return null;
             }
 
-            if (reference.NumberOfGenericParameters > 0) {
+            if (reference.ToTypeDefOrRef().NumberOfGenericParameters > 0) {
                 return RemapGenericType(reference);
             }
 
             return Import(reference);
         }
 
-        private ITypeDefOrRef RemapGenericType(ITypeDefOrRef reference) {
-            if (reference.IsTypeDef) {
+        private TypeSig RemapGenericType(TypeSig reference) {
+            var typeDef = reference.TryGetTypeDef();
+            if (typeDef != null) {
                 if (reference.DefinitionAssembly != null && reference.DefinitionAssembly == module.Assembly) {
                     return reference;
                 }
-            } else if (reference.IsTypeSpec || reference.IsTypeRef) {
-                return RemapGenericInstSig(reference.TryGetGenericInstSig());
+            }
+
+            var genericInstSig = reference.ToGenericInstSig();
+            if (genericInstSig != null) {
+                return RemapGenericInstSig(genericInstSig);
             }
 
             throw new NotImplementedException();
         }
 
-        private ITypeDefOrRef RemapGenericInstSig(GenericInstSig genericInstSig) {
+        private TypeSig RemapGenericInstSig(GenericInstSig genericInstSig) {
             var genericTypeRef = genericInstSig.GenericType.ToTypeDefOrRef();
 
-            var importedTypeRef = Import(genericTypeRef);
+            var importedTypeRef = Import(genericTypeRef.ToTypeSig()).ToTypeDefOrRef();
 
             var remappedGenericInstSig = new GenericInstSig(new ClassSig(importedTypeRef), genericInstSig.GenericArguments.Count);
 
             foreach (var referenceGenericArgument in genericInstSig.GenericArguments) {
-                var genericArgumentRef = referenceGenericArgument.ToTypeDefOrRef();
-
-                remappedGenericInstSig.GenericArguments.Add(RemapReference(genericArgumentRef).ToTypeSig());
+                remappedGenericInstSig.GenericArguments.Add(RemapReference(referenceGenericArgument));
             }
 
-            return remappedGenericInstSig.ToTypeDefOrRef();
+            return remappedGenericInstSig;
         }
 
-        private ITypeDefOrRef Import(ITypeDefOrRef reference) {
-            if (reference.DefinitionAssembly != null && sourceAssemblies.Contains(reference.DefinitionAssembly.Name)) {
-                var typeSig = reference.ToTypeSig();
-
-                var name = reference.FullName;
+        private TypeSig Import(TypeSig typeSig) {
+            if (typeSig.DefinitionAssembly != null && sourceAssemblies.Contains(typeSig.DefinitionAssembly.Name)) {
+                var name = typeSig.FullName;
                 if (typeSig.IsSZArray) {
                     // Trim the [] at the end of the name
                     // TODO: Is this the correct way to do the lookup?
@@ -101,20 +101,20 @@ namespace RefRemap
 
                 var targetTypeDef = targetModule.FindThrow(name, false);
 
-                var importedTypeSig = module.Import(targetTypeDef.ToTypeSig());
+                var importedTypeSig = module.Import(targetTypeDef).ToTypeSig();
 
                 importedTypeSig.ToTypeDefOrRef().ResolveTypeDefThrow();
 
                 if (typeSig.IsSZArray) {
-                    return new SZArraySig(importedTypeSig).ToTypeDefOrRef();
+                    return new SZArraySig(importedTypeSig);
                 } else if (typeSig.IsByRef) {
-                    return new ByRefSig(importedTypeSig).ToTypeDefOrRef();
+                    return new ByRefSig(importedTypeSig);
                 } else {
-                    return importedTypeSig.ToTypeDefOrRef();
+                    return importedTypeSig;
                 }
             }
 
-            return reference;
+            return typeSig;
         }
 
         private void RemapTypeDef(TypeDef type) {
