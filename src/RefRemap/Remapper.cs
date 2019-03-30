@@ -42,6 +42,10 @@ namespace RefRemap
 
                 using (var targetModule = ModuleDefMD.Load(targetAssemblyPath)) {
                     targetModule.Context = moduleContext;
+
+                    // The target module is never modified, so this is safe to enable
+                    targetModule.EnableTypeDefFindCache = true;
+
                     assemblyResolver.AddToCache(targetModule);
 
                     var context = new RemapContext(module, targetModule, contextSourceNames, options);
