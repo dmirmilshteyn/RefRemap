@@ -12,6 +12,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="BamlParser" Version="1.0.0" />
         <PackageReference Include="dnlib" Version="3.2.0" />
         <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     </ItemGroup>

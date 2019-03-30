@@ -1,4 +1,5 @@
 ﻿using dnlib.DotNet;
+using RefRemap.Remappers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -48,9 +49,19 @@ namespace RefRemap
 
                     assemblyResolver.AddToCache(targetModule);
 
-                    var context = new RemapContext(module, targetModule, contextSourceNames, options);
+                    var remapContext = new RemapContext(module, targetModule, contextSourceNames, options);
 
-                    context.Remap();
+                    var remappers = new List<IRemapper>()
+                    {
+                        new ILRemapper(remapContext),
+                        new WPFRemapper(remapContext)
+                    };
+
+                    foreach (var remapper in remappers) {
+                        if (remapper.IsCompatible()) {
+                            remapper.Remap();
+                        }
+                    }
 
                     module.Write(outputPath);
                 }
