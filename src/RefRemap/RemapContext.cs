@@ -72,11 +72,11 @@ namespace RefRemap
         }
 
         private TypeSig RemapGenericInstSig(GenericInstSig genericInstSig) {
-            var genericTypeRef = genericInstSig.GenericType.ToTypeDefOrRef();
+            var genericTypeRef = genericInstSig.GenericType;
 
-            var importedTypeRef = Import(genericTypeRef.ToTypeSig()).ToTypeDefOrRef();
+            var importedTypeRef = Import(genericTypeRef);
 
-            var remappedGenericInstSig = new GenericInstSig(new ClassSig(importedTypeRef), genericInstSig.GenericArguments.Count);
+            var remappedGenericInstSig = new GenericInstSig(importedTypeRef.ToClassOrValueTypeSig(), genericInstSig.GenericArguments.Count);
 
             foreach (var referenceGenericArgument in genericInstSig.GenericArguments) {
                 remappedGenericInstSig.GenericArguments.Add(RemapReference(referenceGenericArgument));
