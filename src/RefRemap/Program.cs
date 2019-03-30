@@ -15,6 +15,8 @@ namespace RefRemap
             var targetOption = app.Option("-t|--target", "Target assembly path.", CommandOptionType.SingleValue);
             var outputOption = app.Option("-o|--output", "Output path where the generated assembly will be written to.", CommandOptionType.SingleValue);
 
+            var resolveOption = app.Option("-r|--resolve", "Attempt to resolve types after remapping.", CommandOptionType.NoValue); 
+
             app.OnExecute(async () => {
                 var logger = new ConsoleLogger();
 
@@ -52,8 +54,13 @@ namespace RefRemap
                     Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
                 }
 
+                var remapOptions = new RemapOptions();
+                if (resolveOption.HasValue()) {
+                    remapOptions.Resolve = true;
+                }
+
                 var remapper = new Remapper(logger, assemblyPath, sourceOption.Values);
-                return await remapper.Remap(targetAssemblyPath, outputPath);
+                return await remapper.Remap(targetAssemblyPath, outputPath, remapOptions);
             });
 
             return app.Execute(args);

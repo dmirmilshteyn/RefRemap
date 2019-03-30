@@ -20,7 +20,7 @@ namespace RefRemap
             this.sourceNames = new HashSet<string>(sourceReferenceNames);
         }
 
-        public async Task<int> Remap(string targetAssemblyPath, string outputPath) {
+        public async Task<int> Remap(string targetAssemblyPath, string outputPath, RemapOptions options) {
             await logger.Log(LogLevel.Info, $"Processing \'{assemblyPath}\'...");
 
             var targetName = Path.GetFileNameWithoutExtension(targetAssemblyPath);
@@ -44,7 +44,7 @@ namespace RefRemap
                     targetModule.Context = moduleContext;
                     assemblyResolver.AddToCache(targetModule);
 
-                    var context = new RemapContext(module, targetModule, contextSourceNames);
+                    var context = new RemapContext(module, targetModule, contextSourceNames, options);
 
                     context.Remap();
 

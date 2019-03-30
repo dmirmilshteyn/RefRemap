@@ -11,13 +11,15 @@ namespace RefRemap
         private readonly ModuleDefMD module;
         private readonly ModuleDefMD targetModule;
         private readonly HashSet<string> sourceAssemblies;
+        private readonly RemapOptions options;
 
         Stack<MethodDef> methodDefStack;
 
-        public RemapContext(ModuleDefMD module, ModuleDefMD targetModule, HashSet<string> sourceAssemblies) {
+        public RemapContext(ModuleDefMD module, ModuleDefMD targetModule, HashSet<string> sourceAssemblies, RemapOptions options) {
             this.module = module;
             this.targetModule = targetModule;
             this.sourceAssemblies = sourceAssemblies;
+            this.options = options;
 
             this.methodDefStack = new Stack<MethodDef>();
         }
@@ -103,7 +105,9 @@ namespace RefRemap
 
                 var importedTypeSig = module.Import(targetTypeDef).ToTypeSig();
 
-                importedTypeSig.ToTypeDefOrRef().ResolveTypeDefThrow();
+                if (options.Resolve) {
+                    importedTypeSig.ToTypeDefOrRef().ResolveTypeDefThrow();
+                }
 
                 if (typeSig.IsSZArray) {
                     return new SZArraySig(importedTypeSig);
