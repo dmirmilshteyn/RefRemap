@@ -103,6 +103,8 @@ namespace RefRemap
 
                 var importedTypeSig = module.Import(targetTypeDef.ToTypeSig());
 
+                importedTypeSig.ToTypeDefOrRef().ResolveTypeDefThrow();
+
                 if (typeSig.IsSZArray) {
                     return new SZArraySig(importedTypeSig).ToTypeDefOrRef();
                 } else if (typeSig.IsByRef) {

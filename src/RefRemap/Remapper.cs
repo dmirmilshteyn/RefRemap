@@ -30,8 +30,23 @@ namespace RefRemap
                 contextSourceNames.Remove(targetName);
             }
 
+            var assemblyResolver = new AssemblyResolver();
+            var moduleContext = new ModuleContext(assemblyResolver);
+
+            assemblyResolver.DefaultModuleContext = moduleContext;
+            assemblyResolver.EnableTypeDefCache = true;
+
             using (var module = ModuleDefMD.Load(assemblyPath)) {
+                module.Context = moduleContext;
+                assemblyResolver.AddToCache(module);
+
                 using (var targetModule = ModuleDefMD.Load(targetAssemblyPath)) {
+                    targetModule.Context = moduleContext;
+                    assemblyResolver.AddToCache(targetModule);
+
+                    module.LoadEverything();
+                    targetModule.LoadEverything();
+
                     var context = new RemapContext(module, targetModule, contextSourceNames);
 
                     context.Remap();
