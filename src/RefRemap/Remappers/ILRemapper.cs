@@ -42,7 +42,9 @@ namespace RefRemap.Remappers
                 return null;
             }
 
-            if (reference.ToTypeDefOrRef().NumberOfGenericParameters > 0) {
+            var referenceTypeDefOrRef = reference.ToTypeDefOrRef();
+
+            if (referenceTypeDefOrRef.NumberOfGenericParameters > 0) {
                 return RemapGenericType(reference);
             }
 
@@ -81,32 +83,38 @@ namespace RefRemap.Remappers
 
         private TypeSig Import(TypeSig typeSig) {
             if (typeSig.DefinitionAssembly != null && SourceAssemblies.Contains(typeSig.DefinitionAssembly.Name)) {
-                var name = typeSig.FullName;
-                if (typeSig.IsSZArray) {
-                    // Trim the [] at the end of the name
-                    // TODO: Is this the correct way to do the lookup?
-                    name = name.Substring(0, name.Length - 2);
-                } else if (typeSig.IsByRef) {
-                    // Trim the & at the end of the name
-                    // TODO: Is this the correct way to do the lookup?
-                    name = name.Substring(0, name.Length - 1);
+                var baseTypeSig = typeSig;
+
+                if (typeSig.IsSZArray || typeSig.IsByRef || typeSig.IsArray) {
+                    baseTypeSig = typeSig.Next;
                 } else if (typeSig.IsFunctionPointer || typeSig.IsPointer || typeSig.IsPinned || typeSig.IsModuleSig || typeSig.IsGenericParameter ||
-                           typeSig.IsGenericTypeParameter || typeSig.IsGenericInstanceType || typeSig.IsGenericMethodParameter) {
+                           typeSig.IsGenericTypeParameter || typeSig.IsGenericInstanceType || typeSig.IsGenericMethodParameter || typeSig.IsValueArray) {
                     throw new NotImplementedException();
                 }
 
-                var targetTypeDef = TargetModule.FindThrow(name, false);
+                TypeSig importedTypeSig;
+                if (baseTypeSig.IsGenericInstanceType) {
+                    importedTypeSig = RemapGenericInstSig(baseTypeSig.ToGenericInstSig());
+                } else {
+                    var name = baseTypeSig.FullName;
 
-                var importedTypeSig = Module.Import(targetTypeDef).ToTypeSig();
+                    var targetTypeDef = TargetModule.FindThrow(name, false);
 
-                if (Options.Resolve) {
-                    importedTypeSig.ToTypeDefOrRef().ResolveTypeDefThrow();
+                    importedTypeSig = Module.Import(targetTypeDef).ToTypeSig();
+
+                    if (Options.Resolve) {
+                        importedTypeSig.ToTypeDefOrRef().ResolveTypeDefThrow();
+                    }
                 }
 
                 if (typeSig.IsSZArray) {
                     return new SZArraySig(importedTypeSig);
                 } else if (typeSig.IsByRef) {
                     return new ByRefSig(importedTypeSig);
+                } else if (typeSig.IsArray) {
+                    var arraySig = typeSig.ToArraySig();
+
+                    return new ArraySig(importedTypeSig, arraySig.Rank, arraySig.Sizes, arraySig.LowerBounds);
                 } else {
                     return importedTypeSig;
                 }
